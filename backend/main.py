@@ -26,6 +26,7 @@ app.include_router(videos.router, prefix="/api/videos", tags=["videos"])
 app.include_router(chat.router,   prefix="/api/chat",   tags=["chat"])
 
 
+
 @app.get("/health")
 def health():
     return {"status": "ok"}
