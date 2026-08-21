@@ -34,7 +34,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /app
 
 # Install Python dependencies
-COPY backend/requirements.txt .
+COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Install Remotion renderer dependencies in the image so the worker can render
@@ -43,7 +43,7 @@ COPY video-renderer/package*.json ./video-renderer/
 RUN cd video-renderer && npm install
 
 # Copy app code and the Remotion renderer source
-COPY backend/ .
+COPY . .
 COPY video-renderer/ ./video-renderer/
 
 # Expose API port
