@@ -1,0 +1,67 @@
+version: "3.9"
+
+services:
+  # ── Redis ──────────────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
+  # ── FastAPI Backend ────────────────────────────────────────────────────────
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./backend/.env
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - REMOTION_DIR=/app/video-renderer
+    volumes:
+      - ./video-renderer:/app/video-renderer
+      - video_renderer_node_modules:/app/video-renderer/node_modules
+      - /tmp/ai-edu:/tmp/ai-edu
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+  # ── RQ Worker ─────────────────────────────────────────────────────────────
+  worker:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    command: python worker.py
+    env_file:
+      - ./backend/.env
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - REMOTION_DIR=/app/video-renderer
+    volumes:
+      - ./video-renderer:/app/video-renderer
+      - video_renderer_node_modules:/app/video-renderer/node_modules
+      - /tmp/ai-edu:/tmp/ai-edu
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+  # ── Next.js Frontend ──────────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    env_file:
+      - ./frontend/.env.local
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  redis_data:
+  video_renderer_node_modules:
