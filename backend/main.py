@@ -12,10 +12,11 @@ app = FastAPI(
     version="1.0.0",
 )
 
-allow_origins = [settings.FRONTEND_URL]
+frontend_url = settings.FRONTEND_URL.rstrip("/")
+allow_origins = [frontend_url]
 
 # Allow localhost:3000 as a fallback for local development
-if "localhost" not in settings.FRONTEND_URL:
+if "localhost" not in frontend_url:
     allow_origins.append("http://localhost:3000")
 
 app.add_middleware(
