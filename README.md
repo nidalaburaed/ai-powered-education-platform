@@ -228,23 +228,139 @@ Should return: `{"status": "ok"}`
 
 ---
 
+## Deploy to Railway (showcase)
+
+This is a showcase deployment, not a production setup. It exists so reviewers can see the app running without a local install.
+
+### Prerequisites
+
+| Tool | Install |
+|------|---------|
+| Railway CLI | `bash <(curl -fsSL railway.com/install.sh) -y`, then `railway login` |
+| Supabase CLI | `npm i -D supabase`, then `npx supabase login` and `npx supabase link --project-ref <ref>` |
+| Docker | Not required — Railway builds the images |
+
+### Services
+
+| Service | What it runs | Domain | Notes |
+|---------|---------------|--------|-------|
+| `frontend` | Next.js app | Public | Built with the backend domain inlined |
+| `backend` | FastAPI API | Public | Healthcheck: `/health` |
+| `worker` | Same image as `backend` | None | Start command: `python worker.py` |
+| `Redis` | Railway database | None | Provides `REDIS_URL` |
+
+### One-time project setup
+
+```bash
+railway init            # or: railway link (to an existing project)
+
+railway add --service backend
+railway add --service worker
+railway add --service frontend
+railway add --database redis
+
+railway domain --service backend
+railway domain --service frontend
+```
+
+The worker needs a custom start command instead of the backend's default. Set it in the dashboard: `worker` service → Settings → Deploy → **Custom Start Command** → `python worker.py`.
+The CLI equivalent (`railway environment edit --service-config worker deploy.startCommand "python worker.py"`) can report "No changes to apply" in Railway CLI 5.49 even though nothing was set — if so, use `railway api` with the `serviceInstanceUpdate` GraphQL mutation instead.
+
+### Config-as-code
+
+Each service reads its build/deploy settings from a checked-in `railway.json`:
+
+| File | Used by | Carries |
+|------|---------|---------|
+| `backend/railway.json` | `backend` | Healthcheck path `/health`, 300s timeout, restart policy `ON_FAILURE` |
+| `backend/railway.worker.json` | `worker` | Start command `python worker.py`, restart policy `ON_FAILURE` |
+| `frontend/railway.json` | `frontend` | Restart policy `ON_FAILURE` |
+
+### Database
+
+Push the schema and storage bucket with the Supabase CLI:
+```bash
+npx supabase db push --linked
+```
+Sign-up confirmation emails redirect to the project's auth **Site URL**, which defaults to `localhost:3000`. Point it at the deployed frontend and allow that origin (Supabase dashboard → Authentication → URL Configuration, or the Management API `PATCH /v1/projects/<ref>/config/auth` with `site_url` and `uri_allow_list`):
+
+```
+site_url        = https://<frontend-domain>
+uri_allow_list  = https://<frontend-domain>,https://<frontend-domain>/**
+```
+
+This applies everything in `supabase/migrations/` — it creates the schema **and** the public `homework-videos` bucket, so the manual bucket step in Step 1 is not needed for this path.
+
+### Variables
+
+Secrets below are placeholders — use your real values. Set them with:
+```bash
+railway variable set --service backend --skip-deploys ANTHROPIC_API_KEY=<your-key>
+```
+Quote any value containing `${{...}}` in single quotes so your shell doesn't expand it.
+
+| Service | Variable | Value |
+|---------|----------|-------|
+| backend | `ANTHROPIC_API_KEY` | `<your-key>` |
+| backend | `SUPABASE_URL` | `https://<ref>.supabase.co` |
+| backend | `SUPABASE_SERVICE_KEY` | `<your-key>` |
+| backend | `SUPABASE_ANON_KEY` | `<your-key>` |
+| backend | `REDIS_URL` | `${{Redis.REDIS_URL}}` |
+| backend | `REMOTION_DIR` | `/app/video-renderer` |
+| backend | `TTS_PROVIDER` | `espeak` (the Railway image has no Piper `.onnx` voice models) |
+| backend | `FRONTEND_URL` | `https://${{frontend.RAILWAY_PUBLIC_DOMAIN}}` |
+| worker | `ANTHROPIC_API_KEY` | `<your-key>` |
+| worker | `SUPABASE_URL` | `https://<ref>.supabase.co` |
+| worker | `SUPABASE_SERVICE_KEY` | `<your-key>` |
+| worker | `SUPABASE_ANON_KEY` | `<your-key>` |
+| worker | `REDIS_URL` | `${{Redis.REDIS_URL}}` |
+| worker | `REMOTION_DIR` | `/app/video-renderer` |
+| worker | `TTS_PROVIDER` | `espeak` |
+| frontend | `NEXT_PUBLIC_SUPABASE_URL` | `https://<ref>.supabase.co` |
+| frontend | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | `<your-key>` |
+| frontend | `NEXT_PUBLIC_API_URL` | `https://${{backend.RAILWAY_PUBLIC_DOMAIN}}` |
+
+### Deploy
+
+Deploy in this order — the frontend build inlines the backend's public domain, so backend must exist first:
+```bash
+railway up ./backend --service backend --path-as-root --ci
+railway up ./backend --service worker --path-as-root --ci
+railway up ./frontend --service frontend --path-as-root --ci
+```
+
+### Verify
+
+```bash
+curl https://<backend-domain>/health
+railway logs --service worker
+```
+Then open the frontend domain in a browser and upload a homework image.
+
+---
+
 ## Project Structure
 
 ```
 AI-Education/
 ├── backend/            # FastAPI Python API + RQ worker
 │   ├── app/            # Routes, services, models
+│   ├── video-renderer/ # Remotion video renderer
+│   │   └── src/        # Video compositions
 │   ├── main.py         # API entry point
 │   ├── worker.py       # Background job worker
+│   ├── railway.json        # Railway config for the backend service
+│   ├── railway.worker.json # Railway config for the worker service
 │   └── .env.example    # Environment template
 ├── frontend/           # Next.js 14 React app
 │   ├── app/            # Pages and layouts
 │   ├── components/     # UI components
+│   ├── railway.json    # Railway config for the frontend service
 │   └── .env.local.example
-├── video-renderer/     # Remotion video renderer
-│   └── src/            # Video compositions
 ├── database/
 │   └── schema.sql      # Run this in Supabase SQL editor
+├── supabase/
+│   └── migrations/     # Schema + storage bucket, applied via `supabase db push`
 ├── docker-compose.yml  # Runs all services together
 └── setup.sh            # One-time setup helper (Mac/Linux)
 ```
