@@ -1,4 +1,5 @@
 from pydantic_settings import BaseSettings
+from pydantic import field_validator
 from functools import lru_cache
 
 
@@ -43,6 +44,13 @@ class Settings(BaseSettings):
     TEMP_DIR: str = "/tmp/ai-edu"
     MAX_FILE_SIZE_MB: int = 50
     FRONTEND_URL: str = "http://localhost:3000"
+
+    @field_validator("*", mode="before")
+    @classmethod
+    def _strip_str(cls, v):
+        # Railway/.env values can carry stray CR or spaces; an untrimmed API key
+        # produces an illegal HTTP header and a misleading APIConnectionError.
+        return v.strip() if isinstance(v, str) else v
 
     class Config:
         env_file = ".env"

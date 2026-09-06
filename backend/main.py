@@ -13,7 +13,7 @@ app = FastAPI(
 )
 
 frontend_url = settings.FRONTEND_URL.rstrip("/")
-allow_origins = [frontend_url, "https://frontend-production-bb27.up.railway.app"]
+allow_origins = [frontend_url]
 
 # Allow localhost:3000 as a fallback for local development
 if "localhost" not in frontend_url:
@@ -21,7 +21,7 @@ if "localhost" not in frontend_url:
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=allow_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
