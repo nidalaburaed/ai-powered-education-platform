@@ -47,9 +47,6 @@ RUN cd video-renderer && npm install && npx remotion browser ensure
 # Copy app code, including the Remotion renderer source
 COPY . .
 
-# Expose default API port (Railway injects PORT at runtime; see CMD below)
 EXPOSE 8000
 
-# Default: run the API server. Bind to Railway's injected PORT, falling back
-# to 8000 for local `docker run` without -e PORT.
 CMD ["sh", "-c", "uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}"]

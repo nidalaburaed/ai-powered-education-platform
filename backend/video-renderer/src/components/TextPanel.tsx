@@ -1,5 +1,5 @@
 import React from "react";
-import { interpolate, useCurrentFrame } from "remotion";
+import { interpolate, useCurrentFrame, useVideoConfig } from "remotion";
 import type { ScriptLine } from "../types";
 
 interface TextPanelProps {
@@ -8,8 +8,9 @@ interface TextPanelProps {
 
 export const TextPanel: React.FC<TextPanelProps> = ({ line }) => {
   const frame = useCurrentFrame();
-  const opacity = interpolate(frame, [0, 10], [0, 1], { extrapolateRight: "clamp" });
-  const scale = interpolate(frame, [0, 10], [0.95, 1], { extrapolateRight: "clamp" });
+  const { fps } = useVideoConfig();
+  const opacity = interpolate(frame, [0, fps / 3], [0, 1], { extrapolateRight: "clamp" });
+  const scale = interpolate(frame, [0, fps / 3], [0.95, 1], { extrapolateRight: "clamp" });
 
   if (line.visual_cue === "show_list" && line.bullet_points && line.bullet_points.length > 0) {
     return (
@@ -34,7 +35,7 @@ export const TextPanel: React.FC<TextPanelProps> = ({ line }) => {
           }}
         >
           {line.bullet_points.map((point, i) => {
-            const bulletOpacity = interpolate(frame, [i * 4, i * 4 + 8], [0, 1], {
+            const bulletOpacity = interpolate(frame, [(i * fps) / 7.5, (i * fps) / 7.5 + fps / 3.75], [0, 1], {
               extrapolateRight: "clamp",
             });
             return (

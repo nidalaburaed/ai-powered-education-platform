@@ -1,5 +1,5 @@
 import React from "react";
-import { interpolate, useCurrentFrame } from "remotion";
+import { interpolate, useCurrentFrame, useVideoConfig } from "remotion";
 
 interface ChartData {
   type: "bar" | "line";
@@ -14,7 +14,8 @@ interface ChartPanelProps {
 
 export const ChartPanel: React.FC<ChartPanelProps> = ({ data }) => {
   const frame = useCurrentFrame();
-  const opacity = interpolate(frame, [0, 12], [0, 1], { extrapolateRight: "clamp" });
+  const { fps } = useVideoConfig();
+  const opacity = interpolate(frame, [0, fps / 2.5], [0, 1], { extrapolateRight: "clamp" });
   const maxValue = Math.max(...data.values);
   const CHART_H = 180;
 
@@ -70,7 +71,7 @@ export const ChartPanel: React.FC<ChartPanelProps> = ({ data }) => {
             const heightPct = maxValue > 0 ? val / maxValue : 0;
             const barHeight = interpolate(
               frame,
-              [i * 3, i * 3 + 15],
+              [(i * fps) / 10, (i * fps) / 10 + fps / 2],
               [0, CHART_H * heightPct],
               { extrapolateRight: "clamp" }
             );

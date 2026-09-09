@@ -1,6 +1,6 @@
 import type { ScriptLine } from "../types";
 
-export const FPS = 30;
+export const FPS = 15;
 export const MIN_DURATION_SECONDS = 10;
 export const TRAILING_PADDING_SECONDS = 1;
 

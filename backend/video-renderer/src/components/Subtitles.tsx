@@ -1,5 +1,5 @@
 import React from "react";
-import { interpolate, useCurrentFrame } from "remotion";
+import { interpolate, useCurrentFrame, useVideoConfig } from "remotion";
 import type { ScriptLine } from "../types";
 
 interface SubtitlesProps {
@@ -13,10 +13,11 @@ const SPEAKER_COLORS: Record<string, string> = {
 
 export const Subtitles: React.FC<SubtitlesProps> = ({ line }) => {
   const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
 
   if (!line) return null;
 
-  const opacity = interpolate(frame, [0, 8], [0, 1], { extrapolateRight: "clamp" });
+  const opacity = interpolate(frame, [0, fps / 3.75], [0, 1], { extrapolateRight: "clamp" });
   const color = SPEAKER_COLORS[line.speaker] ?? "#ffffff";
 
   return (

@@ -25,6 +25,7 @@ const SPEAKER_CONFIG = {
 
 export const SpeakerWave: React.FC<SpeakerWaveProps> = ({ speaker, isActive }) => {
   const frame = useCurrentFrame();
+  const { fps } = useVideoConfig();
   const config = SPEAKER_CONFIG[speaker];
   const BAR_COUNT = 7;
 
@@ -46,7 +47,7 @@ export const SpeakerWave: React.FC<SpeakerWaveProps> = ({ speaker, isActive }) =
       <div style={{ display: "flex", alignItems: "flex-end", gap: 2.5, height: 24 }}>
         {Array.from({ length: BAR_COUNT }).map((_, i) => {
           const amplitude = isActive
-            ? Math.abs(Math.sin((frame / 6 + i * 0.7) * 1.8)) * 16 + 4
+            ? Math.abs(Math.sin((frame / (fps / 5) + i * 0.7) * 1.8)) * 16 + 4
             : 4;
           return (
             <div

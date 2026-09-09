@@ -1,6 +1,6 @@
 import React from "react";
 import katex from "katex";
-import { interpolate, useCurrentFrame } from "remotion";
+import { interpolate, useCurrentFrame, useVideoConfig } from "remotion";
 
 interface EquationPanelProps {
   equation: string;
@@ -9,8 +9,9 @@ interface EquationPanelProps {
 
 export const EquationPanel: React.FC<EquationPanelProps> = ({ equation, title }) => {
   const frame = useCurrentFrame();
-  const opacity = interpolate(frame, [0, 12], [0, 1], { extrapolateRight: "clamp" });
-  const translateY = interpolate(frame, [0, 12], [20, 0], { extrapolateRight: "clamp" });
+  const { fps } = useVideoConfig();
+  const opacity = interpolate(frame, [0, fps / 2.5], [0, 1], { extrapolateRight: "clamp" });
+  const translateY = interpolate(frame, [0, fps / 2.5], [20, 0], { extrapolateRight: "clamp" });
 
   let html = equation;
   try {

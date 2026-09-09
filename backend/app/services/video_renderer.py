@@ -128,7 +128,7 @@ def render_video(script: PodcastScript, audio_src: str, job_dir: str) -> str:
                 f"--props={props_path}",
             ],
             cwd=remotion_dir,
-            capture_output=True,
+            stderr=subprocess.PIPE,
             text=True,
             timeout=settings.REMOTION_RENDER_TIMEOUT_SECONDS,
         )
